@@ -13,7 +13,7 @@
 
 ## What this is
 
-A 2016–2019 MacBook Pro's physical Touch Bar loses its usefulness the moment you're not in an app that draws something onto it — switch to any app without a custom Touch Bar layout and you just get media keys. TouchVitals pins a small Control Strip icon there permanently, and expands into a compact network/disk readout on tap, using the same undocumented `DFRFoundation` + `NSTouchBarItem` system-tray mechanism that tools like [TokenBar](https://github.com/jashjacob/TokenBar) and Pock-style widget managers rely on.
+A MacBook Pro's physical Touch Bar loses its usefulness the moment you're not in an app that draws something onto it — switch to any app without a custom Touch Bar layout and you just get media keys. TouchVitals pins a small Control Strip icon there permanently, and expands into a compact network/disk readout on tap, using the same undocumented `DFRFoundation` + `NSTouchBarItem` system-tray mechanism that tools like [TokenBar](https://github.com/jashjacob/TokenBar) and Pock-style widget managers rely on.
 
 It reuses the reader/sampler/scheduler design from [Vitals](https://github.com/jashjacob/vitals) (a menu-bar system monitor) rather than reinventing metrics collection, and ports the private Touch Bar presentation layer from TokenBar rather than reinventing *that*.
 
@@ -31,7 +31,7 @@ Nothing here is signed for distribution or notarized — see [Constraints](#cons
 
 ## Requirements
 
-- A MacBook Pro with a **physical Touch Bar** (2016–2019). There is no simulator for this hardware; everything Touch Bar-related has to be verified on real hardware by hand.
+- A MacBook Pro with a **physical Touch Bar** — any of them: the Intel-era 13"/15"/16" models (2016–2020) or the Apple Silicon 13" M1 (2020) and M2 (2022). Touch Bar Macs were discontinued in October 2023; none of the private-API code here is architecture-specific, so Intel and Apple Silicon behave the same. There is no simulator for this hardware; everything Touch Bar-related has to be verified on real hardware by hand.
 - macOS 14+
 - Swift 6 toolchain (Xcode or Command Line Tools)
 
