@@ -15,6 +15,9 @@ jobs:
       - name: swift build (main package, Swift 6 mode)
         run: swift build -v
 
+      - name: swift test (TouchBarKit: redraw gate + row formatters)
+        run: swift test -v
+
       - name: swift build (Phase 0 spike, Swift 5 mode, private DFRFoundation APIs)
         working-directory: Spikes/TouchBarSpike
         run: swift build -v
