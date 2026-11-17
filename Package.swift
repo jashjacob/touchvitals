@@ -49,9 +49,20 @@ let package = Package(
             path: "Sources/TouchBarKit",
             linkerSettings: [.linkedFramework("AppKit")]
         ),
+        .target(
+            name: "AppMain",
+            dependencies: ["PrivateTouchBar", "TouchBarKit"],
+            path: "Sources/AppMain",
+            // Same reason as PrivateTouchBar's own exemption: this target assigns
+            // PrivateTouchBar.onExternalCollapse, an unchecked static var by design (it's a
+            // callback hook into a method-swizzled private API, not app state), and Swift 6 mode
+            // flags that cross-module regardless of the declaring module's own language mode.
+            swiftSettings: [.swiftLanguageMode(.v5)],
+            linkerSettings: [.linkedFramework("AppKit")]
+        ),
         .executableTarget(
             name: "TouchVitals",
-            dependencies: ["Modules", "MetricsCore", "TouchBarKit", "PrivateTouchBar"],
+            dependencies: ["Modules", "MetricsCore", "TouchBarKit", "PrivateTouchBar", "AppMain"],
             path: "Apps/TouchVitals",
             linkerSettings: [.linkedFramework("AppKit")]
         ),

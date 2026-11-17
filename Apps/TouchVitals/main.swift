@@ -1,14 +1,13 @@
 import AppKit
+import AppMain
 import Foundation
 import MetricsCore
 import Modules
-import PrivateTouchBar
 import TouchBarKit
 
-// Phase 2: build the NSCustomTouchBarItem content (network + disk row) and show it once via
-// PrivateTouchBar.present() at launch. No persistence yet — re-asserting across app switches and
-// Dock menus is Phase 3. Verify on real hardware: does the expanded bar show both widgets, and do
-// they update as you'd expect against Activity Monitor?
+// Phase 3: wire TouchBarController's persistence — the expanded bar now re-asserts itself after
+// switching apps or closing a Dock menu, instead of only showing once at launch. Verify on real
+// hardware: switch to Safari, Finder, and open a Dock menu — does the bar reappear within ~200ms?
 
 setvbuf(stdout, nil, _IONBF, 0)
 
@@ -18,7 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let networkSampler = NetworkSampler()
     private let diskSampler = DiskSampler()
     private let expandedBarView = ExpandedBarView()
-    private var touchBar: NSTouchBar?
+    private lazy var touchBarController = TouchBarController(contentView: expandedBarView)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         scheduler.register(networkSampler) { [weak self] rate in
@@ -38,19 +37,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        presentExpandedBar()
+        touchBarController.start()
         scheduler.start()
-        print("touchvitals Phase 2 running — expanded bar presented once at launch, no persistence yet.")
+        print("touchvitals Phase 3 running — expanded bar persists across app switches and Dock menus.")
     }
 
-    private func presentExpandedBar() {
-        let item = NSCustomTouchBarItem(identifier: .init("com.jashjacob.TouchVitals.expanded"))
-        item.view = expandedBarView
-        let bar = NSTouchBar()
-        bar.templateItems = [item]
-        bar.defaultItemIdentifiers = [item.identifier]
-        touchBar = bar
-        PrivateTouchBar.present(bar)
+    func applicationWillTerminate(_ notification: Notification) {
+        touchBarController.stop()
     }
 }
 
