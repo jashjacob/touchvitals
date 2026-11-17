@@ -34,14 +34,26 @@ let package = Package(
             path: "Sources/Modules"
         ),
         .target(
+            name: "PrivateTouchBar",
+            path: "Sources/PrivateTouchBar",
+            // Swift 5 language mode just for this target: PrivateTouchBar.swift is an unmodified
+            // copy of TokenBar's file (which itself targets Swift 5 mode), and its static mutable
+            // state for the method-swizzling hooks doesn't pass Swift 6's strict concurrency
+            // checking. Scoped here rather than dropping the whole package to Swift 5 mode.
+            swiftSettings: [.swiftLanguageMode(.v5)],
+            linkerSettings: [.linkedFramework("AppKit")]
+        ),
+        .target(
             name: "TouchBarKit",
             dependencies: ["MetricsCore"],
-            path: "Sources/TouchBarKit"
+            path: "Sources/TouchBarKit",
+            linkerSettings: [.linkedFramework("AppKit")]
         ),
         .executableTarget(
             name: "TouchVitals",
-            dependencies: ["Modules", "MetricsCore"],
-            path: "Apps/TouchVitals"
+            dependencies: ["Modules", "MetricsCore", "TouchBarKit", "PrivateTouchBar"],
+            path: "Apps/TouchVitals",
+            linkerSettings: [.linkedFramework("AppKit")]
         ),
         .testTarget(
             name: "TouchBarKitTests",

@@ -1,28 +1,61 @@
+import AppKit
 import Foundation
 import MetricsCore
 import Modules
+import PrivateTouchBar
+import TouchBarKit
+
+// Phase 2: build the NSCustomTouchBarItem content (network + disk row) and show it once via
+// PrivateTouchBar.present() at launch. No persistence yet — re-asserting across app switches and
+// Dock menus is Phase 3. Verify on real hardware: does the expanded bar show both widgets, and do
+// they update as you'd expect against Activity Monitor?
 
 setvbuf(stdout, nil, _IONBF, 0)
 
-// Phase 1: wire the copied NetworkSampler + DiskSampler to a single shared Scheduler tick and
-// print values to console. No UI yet — see vitals PLAN.md §4.1 (one timer, not one per module).
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private let scheduler = Scheduler()
+    private let networkSampler = NetworkSampler()
+    private let diskSampler = DiskSampler()
+    private let expandedBarView = ExpandedBarView()
+    private var touchBar: NSTouchBar?
 
-let scheduler = Scheduler()
-let networkSampler = NetworkSampler()
-let diskSampler = DiskSampler()
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        scheduler.register(networkSampler) { [weak self] rate in
+            let down = ByteRateFormatter.format(bytesPerSecond: rate.downBytesPerSec)
+            let up = ByteRateFormatter.format(bytesPerSecond: rate.upBytesPerSec)
+            print("[net]  \(rate.interfaceName ?? "-")  down \(down)  up \(up)")
+            DispatchQueue.main.async {
+                self?.expandedBarView.updateNetwork(downBytesPerSec: rate.downBytesPerSec, upBytesPerSec: rate.upBytesPerSec)
+            }
+        }
 
-scheduler.register(networkSampler) { rate in
-    let down = ByteRateFormatter.format(bytesPerSecond: rate.downBytesPerSec)
-    let up = ByteRateFormatter.format(bytesPerSecond: rate.upBytesPerSec)
-    print("[net]  \(rate.interfaceName ?? "-")  down \(down)  up \(up)  (total in \(rate.totalBytesIn), out \(rate.totalBytesOut))")
+        scheduler.register(diskSampler) { [weak self] stats in
+            guard let primary = stats.volumes.first(where: { $0.bsdName == stats.primaryBSDName }) else { return }
+            print("[disk] \(primary.volumeName)  \(primary.availableBytes) B free of \(primary.totalBytes) B")
+            DispatchQueue.main.async {
+                self?.expandedBarView.updateDisk(totalBytes: primary.totalBytes, availableBytes: primary.availableBytes)
+            }
+        }
+
+        presentExpandedBar()
+        scheduler.start()
+        print("touchvitals Phase 2 running — expanded bar presented once at launch, no persistence yet.")
+    }
+
+    private func presentExpandedBar() {
+        let item = NSCustomTouchBarItem(identifier: .init("com.jashjacob.TouchVitals.expanded"))
+        item.view = expandedBarView
+        let bar = NSTouchBar()
+        bar.templateItems = [item]
+        bar.defaultItemIdentifiers = [item.identifier]
+        touchBar = bar
+        PrivateTouchBar.present(bar)
+    }
 }
 
-scheduler.register(diskSampler) { stats in
-    let read = ByteRateFormatter.format(bytesPerSecond: stats.readBytesPerSec)
-    let write = ByteRateFormatter.format(bytesPerSecond: stats.writeBytesPerSec)
-    print("[disk] \(stats.primaryBSDName ?? "-")  read \(read)  write \(write)  (\(stats.volumes.count) volumes mounted)")
-}
-
-print("touchvitals Phase 1 console harness running (network every 1s, disk every 2s). Ctrl+C to stop.")
-scheduler.start()
-RunLoop.main.run()
+let app = NSApplication.shared
+app.setActivationPolicy(.accessory)
+let delegate = AppDelegate()
+app.delegate = delegate
+app.run()
