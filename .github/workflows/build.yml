@@ -5,23 +5,16 @@ on:
   pull_request:
 
 jobs:
-  build-main-package:
-    name: Build TouchVitals package (Swift 6 mode)
+  build:
+    name: Build both Swift packages
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - run: swift --version
-      - name: swift build
+
+      - name: swift build (main package, Swift 6 mode)
         run: swift build -v
 
-  build-touchbar-spike:
-    name: Build Phase 0 spike (Swift 5 mode, private DFRFoundation APIs)
-    runs-on: macos-latest
-    defaults:
-      run:
+      - name: swift build (Phase 0 spike, Swift 5 mode, private DFRFoundation APIs)
         working-directory: Spikes/TouchBarSpike
-    steps:
-      - uses: actions/checkout@v4
-      - run: swift --version
-      - name: swift build
         run: swift build -v
