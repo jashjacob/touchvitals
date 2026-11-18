@@ -46,7 +46,11 @@ public final class PercentSparklineWidgetView: NSView {
             chip.update(text: text, tint: color(for: CapacityFormatter.severity(usedFraction: fraction)))
         }
         history.append(percent)
-        sparkline?.update(points: SparklineFormatter.normalizedPoints(history.inChronologicalOrder()))
+        // Fixed 0...100% scale, not SparklineFormatter's auto-scaled min/max — CPU and memory are
+        // naturally bounded percentages, so the line's height should directly match the percent
+        // chip beside it (0% = bottom, 100% = top). Auto-scaling would make a 10-30% wobble fill
+        // the same height as an 80-100% one, with no way to tell which from the shape alone.
+        sparkline?.update(points: history.inChronologicalOrder().map { max(0, min(1, $0 / 100)) })
     }
 
     private func color(for severity: CapacityFormatter.Severity) -> NSColor {
