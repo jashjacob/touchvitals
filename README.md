@@ -23,11 +23,11 @@ Built in small, independently-verifiable phases rather than as one big drop:
 
 - [x] **Phase 0 — spike.** Confirmed `DFRElementSetControlStripPresenceForIdentifier` / `addSystemTrayItem:` still resolve on this macOS version and register a real, persistent Control Strip icon. [`Spikes/TouchBarSpike`](Spikes/TouchBarSpike)
 - [x] **Phase 1 — sampling.** `NetworkSampler` + `DiskSampler` wired to one shared `Scheduler` tick, printing to console. Cross-checked against `route get default` and `df -h`. [`Apps/TouchVitals/main.swift`](Apps/TouchVitals/main.swift)
-- [ ] **Phase 2 — expanded bar UI.** The pure, testable pieces exist ([`RedrawGate`](Sources/TouchBarKit/RedrawGate.swift), [`NetworkRowFormatter`](Sources/TouchBarKit/NetworkRowFormatter.swift), [`DiskRowFormatter`](Sources/TouchBarKit/DiskRowFormatter.swift), all under [`Tests/TouchBarKitTests`](Tests/TouchBarKitTests)) — the actual `NSCustomTouchBarItem` view is not built yet.
-- [ ] **Phase 3 — persistence.** Re-asserting the expanded bar across app switches and Dock menus. Not started.
-- [ ] **Phase 4 — polish.** Tap-to-expand, mini history view. Not started.
+- [x] **Phase 2 — expanded bar UI.** Network arrows+rate, disk capacity bar+percent, each redraw-gated. [`ExpandedBarView`](Sources/TouchBarKit/ExpandedBarView.swift), tests under [`Tests/TouchBarKitTests`](Tests/TouchBarKitTests).
+- [x] **Phase 3 — persistence.** The expanded bar re-asserts itself across app switches and Dock menus via [`TouchBarController`](Sources/AppMain/TouchBarController.swift) + [`ReassertController`](Sources/TouchBarKit/ReassertController.swift). Verified on hardware.
+- [x] **Phase 4 — polish.** Tap-to-expand from the Control Strip icon, plus a mini download-rate history sparkline ([`SparklineView`](Sources/TouchBarKit/SparklineView.swift), [`RingBuffer`](Sources/MetricsCore/RingBuffer.swift)). Verified on hardware.
 
-Nothing here is signed for distribution or notarized — see [Constraints](#constraints).
+All five phases are built and verified on real Touch Bar hardware. Still **WIP**: no app icon, no persistent-login/launch-agent setup, no signing or notarization — see [Constraints](#constraints).
 
 ## Requirements
 
