@@ -1,12 +1,12 @@
 <p align="center"><b>TouchVitals</b></p>
-<p align="center">A persistent Touch Bar system monitor — network speed and disk usage, always on the Control Strip, no matter what app is frontmost</p>
+<p align="center">A persistent Touch Bar system monitor — network, CPU, memory, and disk, always on the Control Strip, no matter what app is frontmost</p>
 
 <p align="center">
   <a href="https://github.com/jashjacob/touchvitals/actions/workflows/build.yml"><img src="https://github.com/jashjacob/touchvitals/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
 </p>
 
 <p align="center">
-  🚧 <b>Work in progress.</b> There is no release build yet — only a Phase 0 hardware spike and a Phase 1 console harness. See <a href="#status">Status</a> below for what actually works today. 🚧
+  🚧 <b>Work in progress.</b> All five build phases are done and verified on real Touch Bar hardware, but there's no signed release yet — build it from source. See <a href="#status">Status</a> below. 🚧
 </p>
 
 ---
@@ -25,7 +25,7 @@ Built in small, independently-verifiable phases rather than as one big drop:
 - [x] **Phase 1 — sampling.** `NetworkSampler` + `DiskSampler` wired to one shared `Scheduler` tick, printing to console. Cross-checked against `route get default` and `df -h`. [`Apps/TouchVitals/main.swift`](Apps/TouchVitals/main.swift)
 - [x] **Phase 2 — expanded bar UI.** Network arrows+rate, disk capacity bar+percent, each redraw-gated. [`ExpandedBarView`](Sources/TouchBarKit/ExpandedBarView.swift), tests under [`Tests/TouchBarKitTests`](Tests/TouchBarKitTests).
 - [x] **Phase 3 — persistence.** The expanded bar re-asserts itself across app switches and Dock menus via [`TouchBarController`](Sources/AppMain/TouchBarController.swift) + [`ReassertController`](Sources/TouchBarKit/ReassertController.swift). Verified on hardware.
-- [x] **Phase 4 — polish.** Tap-to-expand from the Control Strip icon, plus a mini download-rate history sparkline ([`SparklineView`](Sources/TouchBarKit/SparklineView.swift), [`RingBuffer`](Sources/MetricsCore/RingBuffer.swift)). Verified on hardware.
+- [x] **Phase 4 — polish.** Tap-to-expand from the Control Strip icon, an optional history sparkline per metric, and CPU + memory readouts alongside network and disk ([`CPULoadReader`](Sources/SystemKit/CPU/CPULoadReader.swift), [`MemoryReader`](Sources/SystemKit/Memory/MemoryReader.swift), both ported from Vitals). A menu bar icon controls the Show Graphs preference, About, and Quit. Verified on hardware.
 
 All five phases are built and verified on real Touch Bar hardware. Still **WIP**: no app icon, no persistent-login/launch-agent setup, no signing or notarization — see [Constraints](#constraints).
 
@@ -41,8 +41,8 @@ All five phases are built and verified on real Touch Bar hardware. Still **WIP**
 git clone https://github.com/jashjacob/touchvitals.git
 cd touchvitals
 swift build
-swift test          # TouchBarKit's redraw-gate and formatter rules
-.build/debug/TouchVitals   # Phase 1 console harness (network + disk, Ctrl+C to stop)
+swift test          # TouchBarKit's redraw-gate, formatter, and severity rules
+.build/debug/TouchVitals   # runs the full app — check the menu bar for its control icon
 ```
 
 The Phase 0 hardware spike is a separate package:
@@ -57,12 +57,14 @@ swift build
 
 ```
 Sources/
-  SystemKit/      stateless readers (network interfaces, disk volumes) — ported from Vitals
+  SystemKit/      stateless readers (network, disk, CPU, memory) — ported from Vitals
   Diagnostics/    OSSignposter wrappers — ported from Vitals
-  MetricsCore/    Scheduler, Sampler protocol, formatters — ported from Vitals
-  Modules/        NetworkSampler, DiskSampler — ported from Vitals
-  TouchBarKit/    NEW — pure redraw/formatting logic for the Touch Bar row (Phase 2+)
-Apps/TouchVitals/ console harness (Phase 1), will become the real app entry point
+  MetricsCore/    Scheduler, Sampler protocol, formatters, RingBuffer — ported from Vitals
+  Modules/        NetworkSampler, DiskSampler, CPUSampler, MemorySampler — ported from Vitals
+  PrivateTouchBar/ private DFRFoundation/NSTouchBar hooks — ported from TokenBar
+  TouchBarKit/    NEW — pure redraw/formatting logic and widget views for the Touch Bar row
+  AppMain/        NEW — TouchBarController, menu bar status item, About/Graphs preference
+Apps/TouchVitals/ the app's entry point
 Spikes/           throwaway, hardware-only proofs — not part of the shipped app
 Tests/            unit tests for anything new; ported code is trusted as-is
 ```
