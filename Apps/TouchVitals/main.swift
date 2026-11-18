@@ -16,8 +16,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let scheduler = Scheduler()
     private let networkSampler = NetworkSampler()
     private let diskSampler = DiskSampler()
-    private let expandedBarView = ExpandedBarView()
+    private let cpuSampler = CPUSampler()
+    private let memorySampler = MemorySampler()
+    private let expandedBarView = ExpandedBarView(showGraphs: GraphsPreference.isEnabled)
     private lazy var touchBarController = TouchBarController(contentView: expandedBarView)
+    private let menuBar = MenuBarController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         scheduler.register(networkSampler) { [weak self] rate in
@@ -37,9 +40,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        scheduler.register(cpuSampler) { [weak self] usage in
+            guard usage.hasBaseline else { return }
+            print("[cpu]  \(String(format: "%.1f", usage.overallPercent))%")
+            DispatchQueue.main.async {
+                self?.expandedBarView.updateCPU(percent: usage.overallPercent)
+            }
+        }
+
+        scheduler.register(memorySampler) { [weak self] stats in
+            let percent = CapacityFormatter.usedFraction(totalBytes: stats.totalBytes, availableBytes: stats.freeBytes) * 100
+            print("[mem]  \(String(format: "%.1f", percent))%  \(stats.usedBytes) B used of \(stats.totalBytes) B")
+            DispatchQueue.main.async {
+                self?.expandedBarView.updateMemory(percent: percent)
+            }
+        }
+
         touchBarController.start()
         scheduler.start()
-        print("touchvitals Phase 3 running — expanded bar persists across app switches and Dock menus.")
+        print("touchvitals running — network, disk, CPU, and memory all live on the expanded bar.")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
