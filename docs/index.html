@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TouchVitals</title>
+<meta name="description" content="A Touch Bar system monitor for MacBook Pro: network, CPU, memory, and disk, always on the Control Strip.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /* Layout concept: a long dark strip, echoing the Touch Bar itself, runs the full page as the
+     site's spine. Hero, status, features and build sit in sections that read like Control Strip
+     "slots" widening out into real content. */
+  :root {
+    --bg: #f6f7f8;
+    --surface: #ffffff;
+    --surface-2: #eef0f3;
+    --fg: #14161a;
+    --muted: #5b6470;
+    --border: #dfe3e8;
+    --accent: #2563eb;
+    --accent-warm: #c2730c;
+    --accent-ink: #ffffff;
+    --font-display: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+    --font-body: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a0b0d;
+      --surface: #16181c;
+      --surface-2: #1e2126;
+      --fg: #f2f4f6;
+      --muted: #9aa3ad;
+      --border: #2a2d33;
+      --accent: #5b9bf7;
+      --accent-warm: #f2a93c;
+      --accent-ink: #0a0b0d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0b0d;
+    --surface: #16181c;
+    --surface-2: #1e2126;
+    --fg: #f2f4f6;
+    --muted: #9aa3ad;
+    --border: #2a2d33;
+    --accent: #5b9bf7;
+    --accent-warm: #f2a93c;
+    --accent-ink: #0a0b0d;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+
+  .wrap { max-width: 920px; margin: 0 auto; }
+
+  /* ---------- nav ---------- */
+  nav.topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-block: 20px;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+  .brand-tag { font-family: var(--font-mono); font-weight: 500; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  @media (max-width: 480px) { .brand-tag { display: none; } }
+  nav.topbar a.gh {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+    color: var(--muted); text-decoration: none; display: flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border); padding: 7px 12px; border-radius: 999px;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  nav.topbar a.gh:hover { color: var(--fg); border-color: var(--muted); }
+
+  /* ---------- hero ---------- */
+  header.hero { padding-block: 56px 40px; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--accent);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; display: block;
+  }
+  h1.title { font-size: clamp(34px, 6vw, 56px); line-height: 1.04; letter-spacing: -0.02em; font-weight: 700; }
+  h1.title .accent { color: var(--accent); }
+  p.lede {
+    font-size: 18px; line-height: 1.55; color: var(--muted); max-width: 54ch;
+    margin-top: 18px; font-weight: 400;
+  }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .btn {
+    font-family: var(--font-mono); font-size: 13px; font-weight: 600; letter-spacing: 0.03em;
+    text-decoration: none; padding: 13px 20px; border-radius: 10px; display: inline-flex;
+    align-items: center; gap: 8px; text-transform: uppercase;
+  }
+  .btn.primary { background: var(--fg); color: var(--bg); }
+  .btn.secondary { background: transparent; color: var(--fg); border: 1px solid var(--border); }
+  .btn.primary:hover { opacity: 0.85; }
+  .btn.secondary:hover { border-color: var(--muted); }
+
+  .req-line { margin-top: 20px; font-size: 13px; color: var(--muted); }
+  .req-line code { font-family: var(--font-mono); background: var(--surface-2); padding: 2px 6px; border-radius: 5px; font-size: 12px; }
+
+  /* ---------- touch bar mockup ---------- */
+  .tb-frame { margin-top: 48px; }
+  .tb-caption { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-bottom: 10px; letter-spacing: 0.02em; }
+  .touchbar {
+    background: #0a0a0a;
+    border-radius: 11px;
+    padding: 8px 10px;
+    display: flex; align-items: center; gap: 10px;
+    overflow-x: auto;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 18px 40px -20px rgba(0,0,0,0.55);
+  }
+  @media (prefers-color-scheme: light) { .touchbar { box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 18px 40px -20px rgba(0,0,0,0.3); } }
+  .tb-close {
+    flex: none; width: 26px; height: 26px; border-radius: 50%; background: #2b2b2e;
+    display: flex; align-items: center; justify-content: center; color: #a8a8ab; font-size: 13px;
+  }
+  .tb-chip {
+    flex: none; display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-weight: 600; font-size: 12px; color: #fff;
+    padding: 6px 12px 6px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .tb-chip .ic { font-size: 12px; opacity: 0.95; }
+  .tb-chip.down { background: rgba(59,130,246,0.32); }
+  .tb-chip.up { background: rgba(245,166,35,0.32); }
+  .tb-chip.cpu { background: rgba(59,130,246,0.32); }
+  .tb-chip.mem { background: rgba(59,130,246,0.32); }
+  .tb-chip.disk { background: rgba(239,68,68,0.34); }
+  .tb-sep { flex: none; width: 1px; height: 18px; background: rgba(255,255,255,0.14); }
+  .tb-spacer { flex: 1 1 auto; min-width: 12px; }
+  .tb-control {
+    flex: none; width: 30px; height: 30px; border-radius: 8px; background: #232327;
+    display: flex; align-items: center; justify-content: center; color: #d7d7da; font-size: 13px;
+  }
+  .tb-control.strip-icon { background: #4a4a50; }
+
+  /* ---------- section shell ---------- */
+  section { padding-block: 56px; border-top: 1px solid var(--border); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  h2.section-title { font-size: 24px; letter-spacing: -0.01em; }
+  .section-sub { color: var(--muted); font-size: 14px; font-family: var(--font-mono); }
+
+  /* ---------- status / phases ---------- */
+  .phase-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); }
+  .phase-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 14px; align-items: center; padding: 16px 18px; }
+  .phase-row + .phase-row { border-top: 1px solid var(--border); }
+  .phase-check {
+    width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+  }
+  .phase-name { font-weight: 600; font-size: 14px; }
+  .phase-desc { color: var(--muted); font-size: 13px; margin-top: 2px; font-weight: 400; }
+  .phase-tag {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--accent);
+    letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
+  }
+
+  /* ---------- features grid ---------- */
+  .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .feature-card { background: var(--surface); padding: 22px; min-width: 0; }
+  .feature-icon {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--surface-2); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 15px; margin-bottom: 14px; font-family: var(--font-mono); font-weight: 700;
+  }
+  .feature-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .feature-card p { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  @media (max-width: 620px) { .feature-grid { grid-template-columns: 1fr; } }
+
+  /* ---------- build ---------- */
+  .build-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 760px) { .build-grid { grid-template-columns: 1fr; } }
+  .code-block {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 18px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.9;
+    overflow-x: auto;
+  }
+  .code-block .c { color: var(--muted); }
+  .req-card { border: 1px solid var(--border); border-radius: 12px; padding: 18px; background: var(--surface); }
+  .req-card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-mono); color: var(--muted); margin-bottom: 12px; }
+  .req-card ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.7; color: var(--fg); }
+  .req-card li + li { margin-top: 4px; }
+
+  /* ---------- footer ---------- */
+  footer { padding-block: 40px 56px; border-top: 1px solid var(--border); }
+  .footer-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; }
+  .footer-left { font-size: 13px; color: var(--muted); }
+  .footer-left b { color: var(--fg); }
+  .footer-links { display: flex; gap: 18px; font-size: 13px; }
+  .footer-links a { color: var(--muted); text-decoration: none; }
+  .footer-links a:hover { color: var(--fg); }
+  .credits { margin-top: 18px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .credits a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="topbar">
+    <div class="brand"><span class="dot"></span>TouchVitals <span class="brand-tag">for Touch Bar Macs</span></div>
+    <a class="gh" href="https://github.com/jashjacob/touchvitals" target="_blank" rel="noopener">★ GitHub</a>
+  </nav>
+
+  <header class="hero">
+    <span class="eyebrow">For your MacBook's Touch Bar</span>
+    <h1 class="title">Network, CPU, memory, and disk.<br>Live on your <span class="accent">Touch Bar.</span></h1>
+    <p class="lede">Switch to an app with no custom Touch Bar layout and you get media keys, nothing else. TouchVitals pins four live stats to the Control Strip instead. Tap to expand. Works no matter what app is frontmost.</p>
+    <div class="cta-row">
+      <a class="btn primary" href="https://github.com/jashjacob/touchvitals" target="_blank" rel="noopener">View on GitHub</a>
+      <a class="btn secondary" href="#build">Build from source</a>
+    </div>
+    <p class="req-line">Requires a Touch Bar Mac and macOS 14+. No signed release yet, so for now you build it yourself: <code>swift build</code>.</p>
+
+    <div class="tb-frame">
+      <p class="tb-caption">What's pinned to the Control Strip</p>
+      <div class="touchbar">
+        <div class="tb-close">✕</div>
+        <div class="tb-chip down"><span class="ic">↓</span>Down 277 KB/s</div>
+        <div class="tb-chip up"><span class="ic">↑</span>Up 63 KB/s</div>
+        <div class="tb-sep"></div>
+        <div class="tb-chip cpu"><span class="ic">▣</span>CPU 42%</div>
+        <div class="tb-sep"></div>
+        <div class="tb-chip mem"><span class="ic">▤</span>MEM 67%</div>
+        <div class="tb-sep"></div>
+        <div class="tb-chip disk"><span class="ic">▥</span>Disk 92%</div>
+        <div class="tb-spacer"></div>
+        <div class="tb-control">❮</div>
+        <div class="tb-control strip-icon">☀</div>
+        <div class="tb-control strip-icon">🔊</div>
+        <div class="tb-control strip-icon">🔇</div>
+      </div>
+    </div>
+  </header>
+
+  <section id="status">
+    <div class="section-head">
+      <h2 class="section-title">Status</h2>
+      <span class="section-sub">5 / 5 phases shipped</span>
+    </div>
+    <div class="phase-list">
+      <div class="phase-row">
+        <div class="phase-check">✓</div>
+        <div><div class="phase-name">Phase 0: spike</div><div class="phase-desc">Confirmed the private Control Strip APIs still resolve on this macOS version.</div></div>
+        <div class="phase-tag">Verified</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-check">✓</div>
+        <div><div class="phase-name">Phase 1: sampling</div><div class="phase-desc">Network and disk readers wired to a shared scheduler, cross-checked against <code>route</code> and <code>df</code>.</div></div>
+        <div class="phase-tag">Verified</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-check">✓</div>
+        <div><div class="phase-name">Phase 2: expanded bar UI</div><div class="phase-desc">The real Touch Bar widgets: redraw-gated, unit-tested formatting underneath.</div></div>
+        <div class="phase-tag">Verified</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-check">✓</div>
+        <div><div class="phase-name">Phase 3: persistence</div><div class="phase-desc">Re-asserts itself after app switches and Dock menus, debounced to about 200ms.</div></div>
+        <div class="phase-tag">Verified</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-check">✓</div>
+        <div><div class="phase-name">Phase 4: polish</div><div class="phase-desc">Tap-to-expand, CPU and memory added, optional sparklines, a menu bar control.</div></div>
+        <div class="phase-tag">Verified</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="section-head">
+      <h2 class="section-title">What it shows</h2>
+      <span class="section-sub">one Control Strip slot, four metrics</span>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">↓↑</div>
+        <h3>Network</h3>
+        <p>Download and upload rate, color-coded blue and orange so you never mix them up at a glance.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">▣</div>
+        <h3>CPU</h3>
+        <p>Overall load percentage, sampled every second straight from <code style="font-family:var(--font-mono)">host_processor_info</code>.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">▤</div>
+        <h3>Memory</h3>
+        <p>Used percentage computed the way Activity Monitor does it: active, inactive, wired, and compressed pages.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">▥</div>
+        <h3>Disk</h3>
+        <p>Capacity used on your primary volume, shifting amber past 80% and red past 95% so you notice before it's a problem.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⟳</div>
+        <h3>Stays up</h3>
+        <p>Keeps showing after you switch apps or open a Dock menu, re-asserting itself in about 200ms each time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⋯</div>
+        <h3>Menu bar control</h3>
+        <p>A small status item toggles the history graphs, shows build info, and quits the app cleanly.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="build">
+    <div class="section-head">
+      <h2 class="section-title">Build it yourself</h2>
+      <span class="section-sub">built from source, five minutes start to finish</span>
+    </div>
+    <div class="build-grid">
+      <div class="code-block">
+<span class="c"># clone and build</span><br>
+git clone https://github.com/jashjacob/touchvitals.git<br>
+cd touchvitals<br>
+swift build<br>
+<span class="c"># run the test suite</span><br>
+swift test<br>
+<span class="c"># launch it, then check the menu bar for the control icon</span><br>
+.build/debug/TouchVitals
+      </div>
+      <div class="req-card">
+        <h3>Requirements</h3>
+        <ul>
+          <li>A physical Touch Bar Mac: Intel 13"/15"/16" (2016 to 2020) or Apple Silicon M1/M2 13" (2020 to 2022)</li>
+          <li>macOS 14 or later</li>
+          <li>Swift 6 toolchain (Xcode or Command Line Tools)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-row">
+      <div class="footer-left">Built by <b>Jash</b>. Free and open source.</div>
+      <div class="footer-links">
+        <a href="https://github.com/jashjacob/touchvitals" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/jashjacob/touchvitals/blob/main/README.md" target="_blank" rel="noopener">README</a>
+        <a href="https://github.com/jashjacob/touchvitals/actions" target="_blank" rel="noopener">CI</a>
+      </div>
+    </div>
+    <p class="credits">Reuses the reader/sampler/scheduler design from <a href="https://github.com/jashjacob/vitals" target="_blank" rel="noopener">Vitals</a> and the private Control Strip presentation layer from <a href="https://github.com/jashjacob/TokenBar" target="_blank" rel="noopener">TokenBar</a>. Depends on undocumented <code style="font-family:var(--font-mono)">DFRFoundation</code> APIs that Apple could remove at any time. Not affiliated with Apple.</p>
+  </footer>
+</div>
+
+</body>
+</html>
