@@ -7,6 +7,7 @@ import MetricsCore
 /// from CapacityFormatter.usedFraction on bytes). AppKit drawing is untestable by design — the
 /// percent/severity math it calls is tested.
 public final class PercentSparklineWidgetView: NSView {
+    private let name: String
     private let chip: IconValueChip
     private let sparkline: SparklineView?
     private var gate = RedrawGate()
@@ -14,11 +15,13 @@ public final class PercentSparklineWidgetView: NSView {
 
     public init(
         symbolName: String,
+        name: String,
         showSparkline: Bool = true,
-        chipWidth: CGFloat = 62,
+        chipWidth: CGFloat = 86,
         sparklineWidth: CGFloat = 50,
         height: CGFloat = 30
     ) {
+        self.name = name
         chip = IconValueChip(symbolName: symbolName, width: chipWidth)
         let totalWidth = showSparkline ? chipWidth + sparklineWidth : chipWidth
         sparkline = showSparkline ? SparklineView(width: sparklineWidth, height: height) : nil
@@ -41,7 +44,7 @@ public final class PercentSparklineWidgetView: NSView {
     /// `percent` is 0...100, matching CPUUsage.overallPercent's own unit directly.
     public func update(percent: Double) {
         let fraction = max(0, min(1, percent / 100))
-        let text = CapacityFormatter.percentString(fraction: fraction)
+        let text = "\(name) \(CapacityFormatter.percentString(fraction: fraction))"
         if gate.shouldRedraw(for: text) {
             chip.update(text: text, tint: color(for: CapacityFormatter.severity(usedFraction: fraction)))
         }

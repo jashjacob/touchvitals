@@ -7,9 +7,12 @@ import Foundation
 public enum GraphsPreference {
     private static let key = "com.jashjacob.TouchVitals.showGraphs"
 
+    /// Defaults to off: three unlabeled sparklines sitting between icon chips proved hard to
+    /// attribute at a glance regardless of color/scale tuning — the clean icon+percent chips are
+    /// the default, graphs are an opt-in extra from the menu bar.
     public static var isEnabled: Bool {
         get {
-            guard UserDefaults.standard.object(forKey: key) != nil else { return true }
+            guard UserDefaults.standard.object(forKey: key) != nil else { return false }
             return UserDefaults.standard.bool(forKey: key)
         }
         set { UserDefaults.standard.set(newValue, forKey: key) }

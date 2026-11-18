@@ -22,7 +22,7 @@ public final class ExpandedBarView: NSView {
     private let cpu: PercentSparklineWidgetView
     private let memory: PercentSparklineWidgetView
     private let disk = DiskWidgetView()
-    private let gap: CGFloat = 10
+    private let gap: CGFloat = 16
 
     /// Last 30 download-rate samples (~30s at the Scheduler's ~1s tick) feeding the network sparkline.
     private var downHistory = RingBuffer<Double>(capacity: 30)
@@ -32,8 +32,8 @@ public final class ExpandedBarView: NSView {
     /// than live, so this layout's width stays fixed for the life of a run.
     public init(showGraphs: Bool = true) {
         networkSparkline = showGraphs ? SparklineView(width: 60, height: 30) : nil
-        cpu = PercentSparklineWidgetView(symbolName: "cpu", showSparkline: showGraphs)
-        memory = PercentSparklineWidgetView(symbolName: "memorychip", showSparkline: showGraphs)
+        cpu = PercentSparklineWidgetView(symbolName: "cpu", name: "CPU", showSparkline: showGraphs)
+        memory = PercentSparklineWidgetView(symbolName: "memorychip", name: "MEM", showSparkline: showGraphs)
 
         let groups: [NSView] = ([network, networkSparkline, cpu, memory, disk] as [NSView?]).compactMap { $0 }
         let height = groups.map { $0.intrinsicContentSize.height }.max() ?? 30

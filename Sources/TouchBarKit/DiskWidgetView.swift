@@ -6,11 +6,11 @@ import AppKit
 /// volume's byte-level free-space jitter (which changes every sample but rounds to the same
 /// percent) doesn't force a redraw every tick.
 public final class DiskWidgetView: NSView {
-    private let chip = IconValueChip(symbolName: "internaldrive", width: 70)
+    private let chip = IconValueChip(symbolName: "internaldrive", width: 86)
     private var gate = RedrawGate()
 
     public init() {
-        super.init(frame: NSRect(x: 0, y: 0, width: 70, height: 30))
+        super.init(frame: NSRect(x: 0, y: 0, width: 86, height: 30))
         chip.frame.origin = NSPoint(x: 0, y: (30 - chip.frame.height) / 2)
         addSubview(chip)
     }
@@ -18,10 +18,10 @@ public final class DiskWidgetView: NSView {
     @available(*, unavailable)
     public required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    public override var intrinsicContentSize: NSSize { NSSize(width: 70, height: 30) }
+    public override var intrinsicContentSize: NSSize { NSSize(width: 86, height: 30) }
 
     public func update(totalBytes: UInt64, availableBytes: UInt64) {
-        let text = CapacityFormatter.percentString(totalBytes: totalBytes, availableBytes: availableBytes)
+        let text = "Disk \(CapacityFormatter.percentString(totalBytes: totalBytes, availableBytes: availableBytes))"
         guard gate.shouldRedraw(for: text) else { return }
         let fraction = CapacityFormatter.usedFraction(totalBytes: totalBytes, availableBytes: availableBytes)
         let tint: NSColor
