@@ -17,6 +17,7 @@ import TouchBarKit
 public final class TouchBarController: NSObject {
     private let contentView: NSView
     private var bar: NSTouchBar?
+    private var stripItem: NSCustomTouchBarItem?
     private var started = false
     private lazy var reassertController = ReassertController(
         scheduler: DispatchReassertScheduler(),
@@ -41,6 +42,7 @@ public final class TouchBarController: NSObject {
             name: NSWorkspace.didActivateApplicationNotification, object: nil
         )
         watchMenuTracking()
+        installStrip()
         presentExpanded()
     }
 
@@ -54,6 +56,27 @@ public final class TouchBarController: NSObject {
             PrivateTouchBar.dismiss(bar)
         }
         self.bar = nil
+        if let stripItem {
+            PrivateTouchBar.removeStripItem(stripItem)
+        }
+        stripItem = nil
+    }
+
+    /// presentSystemModalTouchBar:systemTrayItemIdentifier: has no Control Strip item registered
+    /// for stripIdentifier to anchor to without this — it renders nothing, with no crash and no
+    /// logged error. TokenBar's own TouchBarController.start() always calls installStrip() before
+    /// presentExpanded() for the same reason; this is required for Phase 3, not a Phase 4 extra.
+    private func installStrip() {
+        guard stripItem == nil else { return }
+        let item = NSCustomTouchBarItem(identifier: PrivateTouchBar.stripIdentifier)
+        let button = NSButton(frame: NSRect(x: 0, y: 0, width: 36, height: 30))
+        button.title = "TV"
+        button.imagePosition = .noImage
+        button.isBordered = true
+        button.bezelStyle = .rounded
+        item.view = button
+        stripItem = item
+        PrivateTouchBar.addStripItem(item)
     }
 
     private func presentExpanded() {
