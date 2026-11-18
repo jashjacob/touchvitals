@@ -70,6 +70,7 @@ let package = Package(
             name: "TouchBarKitTests",
             dependencies: [
                 "TouchBarKit",
+                "MetricsCore",
                 .product(name: "Testing", package: "swift-testing"),
             ],
             path: "Tests/TouchBarKitTests"
