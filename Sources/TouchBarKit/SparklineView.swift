@@ -22,19 +22,32 @@ public final class SparklineView: NSView {
 
     public override func draw(_ dirtyRect: NSRect) {
         guard points.count > 1 else { return }
-        let path = NSBezierPath()
         let stepX = bounds.width / CGFloat(points.count - 1)
+        let linePath = NSBezierPath()
+        // A filled area under the line (closed down to the baseline) reads as a data-rich graph
+        // rather than a bare stroke — matching the area-chart look of menu-bar monitoring widgets.
+        let fillPath = NSBezierPath()
+        fillPath.move(to: NSPoint(x: 0, y: 0))
+
         for (index, point) in points.enumerated() {
             let x = CGFloat(index) * stepX
             let y = CGFloat(point) * bounds.height
+            let p = NSPoint(x: x, y: y)
             if index == 0 {
-                path.move(to: NSPoint(x: x, y: y))
+                linePath.move(to: p)
             } else {
-                path.line(to: NSPoint(x: x, y: y))
+                linePath.line(to: p)
             }
+            fillPath.line(to: p)
         }
+        fillPath.line(to: NSPoint(x: bounds.width, y: 0))
+        fillPath.close()
+
+        NSColor.controlAccentColor.withAlphaComponent(0.25).setFill()
+        fillPath.fill()
+
         NSColor.controlAccentColor.setStroke()
-        path.lineWidth = 1.5
-        path.stroke()
+        linePath.lineWidth = 1.3
+        linePath.stroke()
     }
 }
