@@ -14,7 +14,9 @@ import TouchBarKit
 /// dlopen'd/dlsym'd or resolved via responds(to:), logging instead of crashing if a future macOS
 /// removes them — see PrivateTouchBar.swift.
 @MainActor
-public final class TouchBarController: NSObject {
+public final class TouchBarController: NSObject, NSTouchBarDelegate {
+    private static let expandedIdentifier = NSTouchBarItem.Identifier("com.jashjacob.TouchVitals.expanded")
+
     private let contentView: NSView
     private var bar: NSTouchBar?
     private var stripItem: NSCustomTouchBarItem?
@@ -74,19 +76,41 @@ public final class TouchBarController: NSObject {
         button.imagePosition = .noImage
         button.isBordered = true
         button.bezelStyle = .rounded
+        button.target = self
+        button.action = #selector(stripClicked)
         item.view = button
         stripItem = item
         PrivateTouchBar.addStripItem(item)
     }
 
+    @objc private func stripClicked() {
+        presentExpanded()
+    }
+
+    /// Reuses the same NSTouchBar across repeated presents (app-switch reasserts included), only
+    /// rebuilding after onExternalCollapse nils `bar` out — matching TokenBar's own
+    /// presentExpanded(), which only calls rebuildBar() when bar == nil.
     private func presentExpanded() {
-        let item = NSCustomTouchBarItem(identifier: .init("com.jashjacob.TouchVitals.expanded"))
-        item.view = contentView
-        let bar = NSTouchBar()
-        bar.templateItems = [item]
-        bar.defaultItemIdentifiers = [item.identifier]
-        self.bar = bar
+        if bar == nil {
+            let newBar = NSTouchBar()
+            newBar.delegate = self
+            newBar.defaultItemIdentifiers = [Self.expandedIdentifier]
+            bar = newBar
+        }
+        guard let bar else { return }
         PrivateTouchBar.present(bar)
+    }
+
+    /// TokenBar builds its main content item through this delegate callback (makeItemForIdentifier),
+    /// not by hand-assembling an item and assigning NSTouchBar.templateItems directly. Eagerly
+    /// building the item ourselves and handing it to templateItems left the content blank on the
+    /// second and later presentations under the private system-modal presentation path — AppKit
+    /// needs to construct the item on demand via this callback for it to render reliably.
+    public func touchBar(_ touchBar: NSTouchBar, makeItemForIdentifier identifier: NSTouchBarItem.Identifier) -> NSTouchBarItem? {
+        guard identifier == Self.expandedIdentifier else { return nil }
+        let item = NSCustomTouchBarItem(identifier: identifier)
+        item.view = contentView
+        return item
     }
 
     @objc private func appActivated() {
